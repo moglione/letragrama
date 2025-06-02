@@ -1,0 +1,173 @@
+:root {
+    --sidebar-width: 280px;
+    --panel-width: 280px;
+    --cell-size: 40px;
+    --letter-scale: 0.8;
+    --spangram-color: #ff5722;
+    --clue-color: #2196f3;
+    --connector-width: 8px;
+    --gap: 16px;
+    --header-height: 64px;
+    --bg: #f5f5f5;
+    --surface: #fff;
+    --border-radius: 8px;
+    --font: sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    display: grid;
+    grid-template-rows: var(--header-height) 1fr;
+    height: 100vh;
+}
+
+header {
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--gap);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+main {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr var(--panel-width);
+    gap: var(--gap);
+    padding: var(--gap);
+    overflow: hidden;
+}
+
+#sidebar {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: var(--gap);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    overflow-y: auto;
+}
+
+#sidebar input,
+#sidebar textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    padding: 8px;
+    font-size: 1rem;
+}
+
+#sidebar button {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#locateAllBtn {
+    background: var(--spangram-color);
+    color: #fff;
+}
+
+#editModeBtn {
+    background: #607d8b;
+    color: #fff;
+}
+
+#saveBtn {
+    background: var(--clue-color);
+    color: #fff;
+}
+
+#messages {
+    color: red;
+    min-height: 1.5em;
+}
+
+#grid-container {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: var(--gap);
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(6, var(--cell-size));
+    grid-template-rows: repeat(8, var(--cell-size));
+    gap: 2px;
+    position: relative;
+}
+
+.cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.letter {
+    width: calc(var(--cell-size)*var(--letter-scale));
+    height: calc(var(--cell-size)*var(--letter-scale));
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+    color: #fff;
+    position: relative;
+    z-index: 2;
+}
+
+.letter.spangram {
+    background: var(--spangram-color);
+}
+
+.letter.clue {
+    background: var(--clue-color);
+}
+
+.letter.fill {
+    background: transparent;
+    color: #000;
+    border-radius: 0;
+}
+
+.connector {
+    position: absolute;
+    height: var(--connector-width);
+    transform-origin: 0 0;
+    z-index: 0;
+}
+
+.connector.spangram {
+    background-color: var(--spangram-color);
+}
+
+.connector.clue {
+    background-color: var(--clue-color);
+}
+
+#panel {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: var(--gap);
+    overflow-y: auto;
+}

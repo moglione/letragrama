@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!-- spangram22-beta -->
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de Letragrama</title>
+  <<link rel="stylesheet" href="assets/css/letragrama.css">
+</head>
+<body>
+  <header><h1>Generador de Tablero</h1></header>
+  <main>
+    <div id="sidebar">
+      <input id="themeInput" placeholder="Tema del juego" />
+      <input id="authorInput" placeholder="Autor del juego" />
+      <input id="wordInput" placeholder="Ingresa spangrama" />
+      <textarea id="cluesInput" rows="6" placeholder="Palabras clave (una por línea)"></textarea>
+      <button id="locateAllBtn">Generar tablero</button>
+      <button id="editModeBtn">Edición manual</button>
+      <button id="saveBtn">Guardar tablero</button>
+      <div id="messages"></div>
+    </div>
+    <div id="grid-container"><div id="grid"></div></div>
+    <div id="panel"><h2>Tableros guardados</h2></div>
+  </main>
+  <script src="assets/js/letragrama.js"></script>
+</body>
+</html>
