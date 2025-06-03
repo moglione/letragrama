@@ -408,13 +408,26 @@ function addManualWord() {
         c: parseInt(cell.dataset.col)
     }));
     
-    drawWord(path, word, 'clue');
-    
-    // Clear remaining inputs
+    // Clear all inputs before drawing word
     cells.forEach(cell => {
         const input = cell.querySelector('input');
-        if (input && !input.value) {
+        if (input) {
             cell.innerHTML = '';
+        }
+    });
+    
+    drawWord(path, word, 'clue');
+    
+    // Re-setup manual editing for empty cells
+    cells.forEach(cell => {
+        if (!cell.querySelector('.letter')) {
+            cell.classList.add('editable');
+            const input = document.createElement('input');
+            input.maxLength = 1;
+            input.addEventListener('keydown', handleCellKeydown);
+            input.addEventListener('input', handleCellInput);
+            input.addEventListener('focus', () => selectCell(cell));
+            cell.appendChild(input);
         }
     });
     
@@ -488,24 +501,27 @@ function toggleEditMode() {
             cell.addEventListener('dragover', handleDragOver);
             cell.addEventListener('drop', handleDrop);
             
-      // Setup for manual editing
-      if (!cell.querySelector('.letter')) {
-        cell.classList.add('editable');
-        const input = document.createElement('input');
-        input.maxLength = 1;
-        input.addEventListener('keydown', handleCellKeydown);
-        input.addEventListener('input', handleCellInput);
-        input.addEventListener('focus', () => selectCell(cell));
-        cell.appendChild(input);
-        
-        // Add click handler to focus input
-        cell.addEventListener('click', () => {
-          const input = cell.querySelector('input');
-          if (input) {
-            input.focus();
-          }
-        });
-      }
+            // Setup for manual editing
+            const letter = cell.querySelector('.letter');
+            if (!letter || letter.classList.contains('fill')) {
+                // Clear filler letters or empty cells
+                cell.innerHTML = '';
+                cell.classList.add('editable');
+                const input = document.createElement('input');
+                input.maxLength = 1;
+                input.addEventListener('keydown', handleCellKeydown);
+                input.addEventListener('input', handleCellInput);
+                input.addEventListener('focus', () => selectCell(cell));
+                cell.appendChild(input);
+                
+                // Add click handler to focus input
+                cell.addEventListener('click', () => {
+                    const input = cell.querySelector('input');
+                    if (input) {
+                        input.focus();
+                    }
+                });
+            }
         } else {
             // Cleanup
             cell.setAttribute('draggable', 'false');
