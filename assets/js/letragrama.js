@@ -32,6 +32,7 @@ let editMode = false;
 let undoStack = [];
 let redoStack = [];
 let selectedCell = null;
+let manualWords = new Set(); // Track manually added words
 
 // Constants
 const vowels = ['A', 'E', 'I', 'O', 'U'];
@@ -48,23 +49,24 @@ const opposite = {
 };
 
 // Modal Functions
+function showMessage(message, type) {
+    const messagesEl = document.getElementById('messages');
+    messagesEl.textContent = message;
+    messagesEl.className = `messages ${type}`;
+    messagesEl.classList.add('show');
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        messagesEl.classList.remove('show');
+    }, 3000);
+}
+
 function showError(message) {
-    errorMessage.textContent = message;
-    errorModal.style.display = 'block';
-    errorModal.classList.add('show');
+    showMessage(message, 'error');
 }
 
 function showSuccess(message) {
-    successMessage.textContent = message;
-    successModal.style.display = 'block';
-    successModal.classList.add('show');
-}
-
-function closeModals() {
-    [errorModal, successModal].forEach(modal => {
-        modal.classList.remove('show');
-        setTimeout(() => modal.style.display = 'none', 300);
-    });
+    showMessage(message, 'success');
 }
 
 // Grid Functions
@@ -416,7 +418,13 @@ function addManualWord() {
         }
     });
     
+    // Add to manual words set and draw with lock
+    manualWords.add(word);
     drawWord(path, word, 'clue');
+    path.forEach(pos => {
+        const letter = document.querySelector(`.cell[data-row="${pos.r}"][data-col="${pos.c}"] .letter`);
+        if (letter) letter.classList.add('locked');
+    });
     
     // Re-setup manual editing for empty cells
     cells.forEach(cell => {
@@ -589,8 +597,19 @@ function locateAll() {
     
     const unplacedWords = [];
     
+    // First place manual words in their existing positions
+    const manualWordObjs = placedWords.filter(w => manualWords.has(w.word));
+    manualWordObjs.forEach(w => {
+        drawWord(w.path, w.word, 'clue');
+        w.path.forEach(pos => {
+            const letter = document.querySelector(`.cell[data-row="${pos.r}"][data-col="${pos.c}"] .letter`);
+            if (letter) letter.classList.add('locked');
+        });
+    });
+    
+    // Then try to place remaining words
     for (const wd of clues) {
-        if (!wd) continue;
+        if (!wd || manualWords.has(wd)) continue;
         
         const cells = getAllCells();
         shuffle(cells);
@@ -622,6 +641,13 @@ function locateAll() {
     } else {
         showSuccess('¡Tablero generado correctamente!');
     }
+}
+
+function regenerateBoard() {
+    // Clear manual word tracking to allow all words to be repositioned
+    manualWords.clear();
+    document.querySelectorAll('.letter.locked').forEach(l => l.classList.remove('locked'));
+    locateAll();
 }
 
 function saveBoard() {
@@ -779,6 +805,7 @@ function createLetter(text) {
 
 // Event Listeners
 locateAllBtn.addEventListener('click', locateAll);
+document.getElementById('regenerateBtn').addEventListener('click', regenerateBoard);
 editModeBtn.addEventListener('click', toggleEditMode);
 addWordBtn.addEventListener('click', addManualWord);
 saveBtn.addEventListener('click', saveBoard);

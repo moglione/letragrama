@@ -282,6 +282,25 @@ input:focus, textarea:focus {
   transition: var(--transition);
 }
 
+.letter.locked::after {
+  content: '\f023';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 0.7rem;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--surface);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
 .letter.spangram {
   background: var(--primary);
 }
@@ -431,9 +450,38 @@ input:focus, textarea:focus {
 
 /* Messages */
 .messages {
-  color: var(--danger);
-  min-height: 1.5em;
-  font-size: 0.9rem;
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  text-align: center;
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: var(--transition);
+  z-index: 5;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  max-width: 90%;
+  width: auto;
+  white-space: pre-line;
+}
+
+.messages.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.messages.error {
+  background: var(--danger);
+  color: white;
+}
+
+.messages.success {
+  background: var(--success);
+  color: white;
 }
 
 /* Responsive Design */
