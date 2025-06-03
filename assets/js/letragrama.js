@@ -12,6 +12,7 @@ const wordInput = document.getElementById('wordInput');
 const cluesInput = document.getElementById('cluesInput');
 const locateAllBtn = document.getElementById('locateAllBtn');
 const editModeBtn = document.getElementById('editModeBtn');
+const addWordBtn = document.getElementById('addWordBtn');
 const saveBtn = document.getElementById('saveBtn');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
@@ -30,6 +31,7 @@ let placedWords = [];
 let editMode = false;
 let undoStack = [];
 let redoStack = [];
+let selectedCell = null;
 
 // Constants
 const vowels = ['A', 'E', 'I', 'O', 'U'];
@@ -81,6 +83,7 @@ function createGrid() {
             cell.className = 'cell';
             cell.dataset.row = r;
             cell.dataset.col = c;
+            cell.tabIndex = -1;
             gridEl.appendChild(cell);
         }
     }
@@ -299,6 +302,125 @@ function fillEmpty() {
     });
 }
 
+// Manual Edit Functions
+function selectCell(cell) {
+    if (selectedCell) {
+        selectedCell.classList.remove('selected');
+    }
+    selectedCell = cell;
+    cell.classList.add('selected');
+}
+
+function handleCellKeydown(event) {
+    const input = event.target;
+    const currentCell = input.parentElement;
+    const cells = Array.from(document.querySelectorAll('.cell'));
+    const currentIndex = cells.indexOf(currentCell);
+    
+    let nextIndex = currentIndex;
+    
+    switch(event.key) {
+        case 'ArrowRight':
+            event.preventDefault();
+            nextIndex = currentIndex + 1;
+            break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            nextIndex = currentIndex - 1;
+            break;
+        case 'ArrowUp':
+            event.preventDefault();
+            nextIndex = currentIndex - 6;
+            break;
+        case 'ArrowDown':
+            event.preventDefault();
+            nextIndex = currentIndex + 6;
+            break;
+        default:
+            return;
+    }
+    
+    // Find next available input cell in the direction
+    while (nextIndex >= 0 && nextIndex < cells.length) {
+        const nextInput = cells[nextIndex].querySelector('input');
+        if (nextInput) {
+            nextInput.focus();
+            nextInput.select();
+            break;
+        }
+        // Continue in same direction if cell doesn't have input
+        nextIndex += (nextIndex > currentIndex ? 1 : -1);
+    }
+}
+
+function handleCellInput(event) {
+    const input = event.target;
+    input.value = input.value.toUpperCase();
+    
+    // Only move to next cell if a letter was typed (not on delete/backspace)
+    if (input.value && event.inputType !== 'deleteContentBackward') {
+        const cells = Array.from(document.querySelectorAll('.cell'));
+        const currentIndex = cells.indexOf(input.parentElement);
+        
+        // Find next available input cell
+        let nextIndex = currentIndex + 1;
+        while (nextIndex < cells.length) {
+            const nextInput = cells[nextIndex].querySelector('input');
+            if (nextInput) {
+                nextInput.focus();
+                nextInput.select();
+                break;
+            }
+            nextIndex++;
+        }
+    }
+}
+
+function addManualWord() {
+    const cells = document.querySelectorAll('.cell');
+    let word = '';
+    let wordCells = [];
+    let hasLetters = false;
+    
+    cells.forEach(cell => {
+        const input = cell.querySelector('input');
+        if (input && input.value) {
+            word += input.value;
+            wordCells.push(cell);
+            hasLetters = true;
+        }
+    });
+    
+    if (!hasLetters) {
+        showError('No hay letras ingresadas para formar una palabra');
+        return;
+    }
+    
+    // Add word to clues
+    const cluesInput = document.getElementById('cluesInput');
+    const currentClues = cluesInput.value.split('\n').filter(clue => clue.trim());
+    currentClues.push(word);
+    cluesInput.value = currentClues.join('\n');
+    
+    // Convert inputs to letters
+    const path = wordCells.map(cell => ({
+        r: parseInt(cell.dataset.row),
+        c: parseInt(cell.dataset.col)
+    }));
+    
+    drawWord(path, word, 'clue');
+    
+    // Clear remaining inputs
+    cells.forEach(cell => {
+        const input = cell.querySelector('input');
+        if (input && !input.value) {
+            cell.innerHTML = '';
+        }
+    });
+    
+    showSuccess(`Palabra "${word}" agregada como palabra clave`);
+}
+
 // Drag and Drop Handlers
 let dragData = null;
 
@@ -344,56 +466,77 @@ function handleDrop(e) {
 }
 
 // Edit Mode Functions
-function enterManual() {
-    editMode = true;
-    editModeBtn.textContent = 'Terminar edición';
-    document.querySelectorAll('.letter.fill').forEach(ld => ld.remove());
+function toggleEditMode() {
+    editMode = !editMode;
+    const editModeBtn = document.getElementById('editModeBtn');
+    const addWordBtn = document.getElementById('addWordBtn');
     
-    document.querySelectorAll('.letter.spangram, .letter.clue').forEach(ld => {
-        ld.draggable = true;
-        ld.addEventListener('dragstart', handleDragStart);
-    });
+    editModeBtn.classList.toggle('active');
+    editModeBtn.innerHTML = editMode ? 
+        '<i class="fas fa-check"></i> Terminar edición' : 
+        '<i class="fas fa-edit"></i> Edición manual';
     
-    document.querySelectorAll('.cell').forEach(cell => {
-        cell.addEventListener('dragover', handleDragOver);
-        cell.addEventListener('drop', handleDrop);
-    });
-}
-
-function exitManual() {
-    editMode = false;
-    editModeBtn.textContent = 'Edición manual';
+    addWordBtn.disabled = !editMode;
     
-    document.querySelectorAll('.letter.spangram, .letter.clue').forEach(ld => {
-        ld.removeAttribute('draggable');
-        ld.removeEventListener('dragstart', handleDragStart);
-    });
-    
-    document.querySelectorAll('.cell').forEach(cell => {
-        cell.removeEventListener('dragover', handleDragOver);
-        cell.removeEventListener('drop', handleDrop);
-    });
-    
-    document.querySelectorAll('.connector').forEach(l => l.remove());
-    placedSegments = [];
-    
-    placedWords.forEach(wObj => {
-        for (let j = 0; j < wObj.path.length - 1; j++) {
-            drawConnector(
-                wObj.path[j],
-                wObj.path[j + 1],
-                wObj.isSpangram ? 'spangram' : 'clue'
-            );
+    // Enable/disable drag and drop and cell editing
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        if (editMode) {
+            // Setup for both drag-drop and manual editing
+            cell.setAttribute('draggable', 'true');
+            cell.addEventListener('dragstart', handleDragStart);
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('drop', handleDrop);
+            
+      // Setup for manual editing
+      if (!cell.querySelector('.letter')) {
+        cell.classList.add('editable');
+        const input = document.createElement('input');
+        input.maxLength = 1;
+        input.addEventListener('keydown', handleCellKeydown);
+        input.addEventListener('input', handleCellInput);
+        input.addEventListener('focus', () => selectCell(cell));
+        cell.appendChild(input);
+        
+        // Add click handler to focus input
+        cell.addEventListener('click', () => {
+          const input = cell.querySelector('input');
+          if (input) {
+            input.focus();
+          }
+        });
+      }
+        } else {
+            // Cleanup
+            cell.setAttribute('draggable', 'false');
+            cell.removeEventListener('dragstart', handleDragStart);
+            cell.removeEventListener('dragover', handleDragOver);
+            cell.removeEventListener('drop', handleDrop);
+            cell.classList.remove('editable', 'selected');
+            
+            const input = cell.querySelector('input');
+            if (input) {
+                if (input.value) {
+                    const letter = createLetter(input.value);
+                    cell.innerHTML = '';
+                    cell.appendChild(letter);
+                } else {
+                    cell.innerHTML = '';
+                }
+            }
         }
     });
     
-    fillEmpty();
+    if (!editMode) {
+        selectedCell = null;
+        fillEmpty();
+    }
 }
 
 // Board Generation and Saving
 function locateAll() {
     clearGrid();
-    if (editMode) exitManual();
+    if (editMode) toggleEditMode();
     
     const sp = wordInput.value.trim().toUpperCase();
     if (sp.length < minLen) {
@@ -610,9 +753,18 @@ function segmentsIntersect(a, b) {
            orient(q1, q2, p1) * orient(q1, q2, p2) < 0;
 }
 
+// Helper function to create letter elements
+function createLetter(text) {
+    const letter = document.createElement('div');
+    letter.className = 'letter';
+    letter.textContent = text;
+    return letter;
+}
+
 // Event Listeners
 locateAllBtn.addEventListener('click', locateAll);
-editModeBtn.addEventListener('click', () => editMode ? exitManual() : enterManual());
+editModeBtn.addEventListener('click', toggleEditMode);
+addWordBtn.addEventListener('click', addManualWord);
 saveBtn.addEventListener('click', saveBoard);
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
